@@ -25,7 +25,7 @@ namespace agent
     static const FieldMatchUnit FIELD_PAIR_LOGIN[] = 
     {
         { "accountID", "", SWAP_STR},
-        { "accountName", "产品名称", SWAP_STR},
+        { "accountName", "单元名称", SWAP_STR},
     };
 
     static const FieldMatchUnit FIELD_PAIR_FUND[] = 
