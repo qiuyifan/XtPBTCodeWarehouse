@@ -93,7 +93,7 @@ import csv\n\
 import os\n\
 import datetime\n\
 \n\
-DataList = []\n\
+DataList = ['交易日期', '业务日期', '委托日期']\n\
 TimeList = []\n\
 \n\
 files = os.listdir('"+ queryPath +"')\n\
