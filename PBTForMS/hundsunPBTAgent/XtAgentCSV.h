@@ -7,6 +7,7 @@
 
 #include "XtAgentMatchDef.h"
 #include "XtAgentError.h"
+#include "XtAgentStruct.h"
 
 namespace bson 
 {
@@ -32,6 +33,8 @@ namespace agent
         void genErrMsgData(const string& errMsg, bson::bo& errMsgBson);
         bson::bo genData(vector<string>& dataFilesPath, int funcNo, string& strAccountID);
         void coverField(vector<string>& lineParm, bson::BSONArrayBuilder& arrayBuilder, int funcNo, std::map<string , int>& name2pos);
+        map< string, AccountStructPtr > loadData(string workPath);
+        void getCSVData(int funcNo, string& strAccountID, bson::bo &data, const string workPath);
         string getTime(string str);
     };
 

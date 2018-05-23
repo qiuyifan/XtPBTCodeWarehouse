@@ -79,6 +79,48 @@ namespace agent
             return ret;
         }
 
+        /**
+        * getFilePaths
+        * @brief    获取目录下所有带文件后缀的文件列表
+        * @param    suffix 文件后缀 ， 是否添加日期后缀
+        * @return   void
+        */
+        static void getFilePaths(const string& suffix, const string& filePath, vector<string>& ret, bool addDate = false)
+        {
+            string fileSuffix("");
+            if (addDate)
+            {
+                fileSuffix += "_" + getFormatData() ;
+            }
+            fileSuffix += suffix;
+
+            // 判断是否有访问文件夹权限
+            if(!dirExists(filePath))
+            {
+                throw(string("无法访问文件夹: ") + filePath);
+            }
+
+            //文件句柄  
+            long hFile   =   0;
+            //文件信息  
+            struct _finddata_t fileinfo;
+            string pathName;
+            if ((hFile = _findfirst(pathName.assign(filePath).append("\\*").c_str(), &fileinfo)) == -1) 
+            {//没有找到文件，返回
+                return;
+            }
+            do {
+                // 是文件且文件名包含后缀str，添加到dataFilesPath
+                string filestr = fileinfo.name;
+                if(filestr.find(fileSuffix) != string::npos)
+                {
+                    ret.push_back(filePath + filestr);
+                }
+            } while (_findnext(hFile, &fileinfo) == 0);
+            _findclose(hFile);
+            return;
+        }
+
 
          /**
         * getFileUpdateTime
@@ -120,7 +162,31 @@ namespace agent
 
             return ret;
         }
+
+        static void getQueryFiles(vector<string>& dataFilesPath, string& suffix, const string path)
+        {
+            //文件句柄  
+            long hFile   =   0;  
+            //文件信息  
+            struct _finddata_t fileinfo;
+            string pathName;
+            if ((hFile = _findfirst(pathName.assign(path).append("\\*").c_str(), &fileinfo)) == -1) 
+            {//没有找到文件，返回
+                return;
+            }
+            do {
+                // 是文件且文件名包含后缀str，添加到dataFilesPath
+                string filestr = fileinfo.name;
+                if(!(fileinfo.attrib&_A_SUBDIR) && filestr.find(suffix) != string::npos)
+                {
+                    dataFilesPath.push_back(path + "/" + filestr);
+                }
+                //cout << fileinfo.name << (fileinfo.attrib&_A_SUBDIR? "[folder]":"[file]") << endl;//可用来调试读取的文件列表
+            } while (_findnext(hFile, &fileinfo) == 0);
+            _findclose(hFile);  
+        }
     };
+
 
 }
 

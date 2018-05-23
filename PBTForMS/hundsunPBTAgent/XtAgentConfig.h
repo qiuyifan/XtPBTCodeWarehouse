@@ -19,6 +19,8 @@ namespace agent
         // 这里需要传产品和单元的名称 恒投客户端资金只有这个名字没有id
         string getAccountID(const string& productName, const string& unitName);
 
+        vector<string> getAllAccountID();
+
     private:
         /*
         * 产品账号用户id匹配关系

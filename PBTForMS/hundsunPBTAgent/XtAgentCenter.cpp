@@ -53,14 +53,6 @@ namespace agent
             is_log_detail_ = config->readInt("common", "log_detail", 1) == 1 ? true : false;
             thread_group_.create_thread(boost::bind(&asio::io_service::run, &io_service_));
 
-            m_csv_file_path = config->read("common", "csv_file_path");
-            boost::algorithm::replace_all(m_csv_file_path, "\\", "/");
-            m_csv_file_path = m_csv_file_path + "/"; // 兼容
-            boost::algorithm::replace_all(m_csv_file_path, "//", "/"); // 确保找到正确路径
-            LOG_INFO(boost::format("==: [common] csv file config path : %d") %m_csv_file_path);
-
-            csvApi_ = boost::shared_ptr<XtAgentCSVApi>(new XtAgentCSVApi);
-
             // init server
             RPCServerConfig server_cfg;
             const unsigned int listen_port = config->readInt("server", "port", 59903);
@@ -82,9 +74,9 @@ namespace agent
             server_->init(*(utils::thread::io_service_pool::instance().get_io_service_exclusive()), server_cfg, shared_from_this());
 
             check_ios_ = utils::thread::io_service_pool::instance().get_io_service_exclusive();
+            data_center_ = GwDataCenterPtr(new GwDataCenter(io_service_));
+            data_center_->init(config);
 
-            file_checker_ = boost::shared_ptr<XtAgentFileChecker>(new XtAgentFileChecker(io_service_));
-            file_checker_->init(config);
         }
         catch (const std::exception& e)
         {
@@ -106,62 +98,6 @@ namespace agent
     {
         io_service_.post(boost::bind(&XtAgentCenter::do_request, this, param.copy(), seq, conn)); // 跨线程，bson对象深拷贝，否则可能会出错
         return utils::bsonNull();
-    }
-
-    string XtAgentCenter::getQueryFolder()
-    {
-        boost::shared_ptr<utils::Configuration> config = boost::shared_ptr<utils::Configuration>(new utils::Configuration((m_csv_file_path + "exportGuid.ini").c_str()));
-        config->load();
-        
-        string ret = config->read("common", "enablepath");
-        if (ret.empty() || ret == "")
-        {
-            throw (string("get exportGuid config error"));
-        }
-        return ret;
-    }
-
-    void XtAgentCenter::getQueryFiles(vector<string>& dataFilesPath, string& suffix)
-    {
-        string path = m_csv_file_path + getQueryFolder() + "\\" + m_strGenFileName;
-        //文件句柄  
-        long hFile   =   0;  
-        //文件信息  
-        struct _finddata_t fileinfo;
-        string pathName;
-        if ((hFile = _findfirst(pathName.assign(path).append("\\*").c_str(), &fileinfo)) == -1) 
-        {//没有找到文件，返回
-            return;
-        }
-        do {
-            // 是文件且文件名包含后缀str，添加到dataFilesPath
-            string filestr = fileinfo.name;
-            if(!(fileinfo.attrib&_A_SUBDIR) && filestr.find(suffix) != string::npos)
-            {
-                dataFilesPath.push_back(path + "/" + filestr);
-            }
-            //cout << fileinfo.name << (fileinfo.attrib&_A_SUBDIR? "[folder]":"[file]") << endl;//可用来调试读取的文件列表
-        } while (_findnext(hFile, &fileinfo) == 0);
-        _findclose(hFile);  
-    }
-
-    void XtAgentCenter::getCSVData(int funcNo, string& strAccountID, bson::bo &data)
-    {
-        vector<string> dataFilesPath;
-        FuncMatchUnit coverFuncUnit;
-        bool isfind = csvApi_->getFuncMatchUnit(coverFuncUnit, funcNo);
-        if (isfind)
-        {
-            getQueryFiles(dataFilesPath, coverFuncUnit.fieldSuffix);
-            data = csvApi_->genData(dataFilesPath, funcNo, strAccountID);
-        }
-        else
-        {
-            bson::bob builder;
-            builder.append("error_no", GW_ERR_NO_SUCH_FUNCNO);
-            builder.append("error_info", "no such funcNo!");
-            data = builder.obj();
-        }
     }
 
     void XtAgentCenter::do_request(const bson::bo& param, const r_int64 seq, const NetConnectionPtr& conn)
@@ -191,8 +127,7 @@ namespace agent
             strPassword = reqFields["passWord"];
 
             bson::bo errMsgBson;
-            bson::bo data;
-            getCSVData(funcNo, strAccountID, data);
+            bson::bo data = data_center_->getData(strAccountID, funcNo);
             LOG_INFO((boost::format(">>> [resp] [%s|%ld] seq: %ld") %funcName %funcNo %seq).str() + (is_log_detail_ ? utils::bsonFullToString(data) : ""));
             RPCServer::sendData(data, seq, conn, STATUS_OK);
         }

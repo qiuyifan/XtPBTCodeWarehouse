@@ -8,6 +8,7 @@
 #include "XtAgentEnum.h"
 #include "XtAgentCommon.h"
 #include "XtAgentConfig.h"
+#include "XtAgentFileOpt.h"
 #include <string>
 
 namespace agent
@@ -321,6 +322,51 @@ namespace agent
                 }
             }
             arrayBuilder.append(subBuilder.obj());
+        }
+    }
+
+    map< string, AccountStructPtr > XtAgentCSVApi::loadData(string workPath)
+    {
+        map< string, AccountStructPtr > ret;
+        vector<string> accountMap = XtAgentConfig::instance()->getAllAccountID();
+        for(vector<string>::iterator iter = accountMap.begin(); iter != accountMap.end(); ++iter)
+        {
+            bson::bo fundData;
+            getCSVData(XT_DATA_TYPE_FUND, *iter, fundData, workPath);
+            bson::bo orderData;
+            getCSVData(XT_DATA_TYPE_ORDER, *iter, orderData, workPath);
+            bson::bo dealData;
+            getCSVData(XT_DATA_TYPE_BUSINESS, *iter, dealData, workPath);
+            bson::bo positionData;
+            getCSVData(XT_DATA_TYPE_POSITION, *iter, positionData, workPath);
+
+            AccountStructPtr accountData = AccountStructPtr(new AccountStruct());
+            accountData->accountID = *iter;
+            accountData->fundData = fundData;
+            accountData->orderData = orderData;
+            accountData->dealData = dealData;
+            accountData->positionData = positionData;
+            ret[*iter] = accountData;
+        }
+        return ret;
+    }
+
+    void XtAgentCSVApi::getCSVData(int funcNo, string& strAccountID, bson::bo &data, const string workPath)
+    {
+        vector<string> dataFilesPath;
+        FuncMatchUnit coverFuncUnit;
+        bool isfind = getFuncMatchUnit(coverFuncUnit, funcNo);
+        if (isfind)
+        {
+            XtAgentFileOpt::getQueryFiles(dataFilesPath, coverFuncUnit.fieldSuffix, workPath);
+            data = genData(dataFilesPath, funcNo, strAccountID);
+        }
+        else
+        {
+            bson::bob builder;
+            builder.append("error_no", GW_ERR_NO_SUCH_FUNCNO);
+            builder.append("error_info", "no such funcNo!");
+            data = builder.obj();
         }
     }
 

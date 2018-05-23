@@ -183,6 +183,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GwDataCenter.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\main.cpp"
 				>
 			</File>
@@ -222,6 +226,10 @@
 			</File>
 			<File
 				RelativePath=".\FileHelper.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GwDataCenter.h"
 				>
 			</File>
 			<File
@@ -266,6 +274,10 @@
 			</File>
 			<File
 				RelativePath=".\XtAgentServer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\XtAgentStruct.h"
 				>
 			</File>
 		</Filter>

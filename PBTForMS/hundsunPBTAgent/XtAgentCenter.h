@@ -3,6 +3,7 @@
 
 #include <boost/asio/io_service.hpp>
 #include "XtAgentFileChecker.h"
+#include "GwDataCenter.h"
 
 namespace bson 
 {
@@ -38,8 +39,6 @@ namespace agent
         void init(boost::shared_ptr<utils::Configuration> config);
         void run();
         bson::bo request(const bson::bo &param, const r_int64& seq, const net::NetConnectionPtr& conn);
-        void getCSVData(int funcNo, string& strAccountID, bson::bo &data);
-        void getQueryFiles(vector<string>& dataFilesPath, string& suffix);
 
     private:
         void do_request(const bson::bo& param, const r_int64 seq, const net::NetConnectionPtr& conn);
@@ -51,14 +50,12 @@ namespace agent
         boost::asio::io_service::work               work_;
         boost::shared_ptr<XtAgentServer>            server_;
         boost::thread_group                         thread_group_;  // 线程池
-        boost::shared_ptr<XtAgentCSVApi>            csvApi_;
-        boost::shared_ptr<XtAgentFileChecker>       file_checker_;
+
+        GwDataCenterPtr                             data_center_;
 
         bool is_log_detail_;
         io_service_ptr check_ios_;
 
-        std::string     m_csv_file_path;
-        std::string     m_strGenFileName;
     };
 }
 

@@ -54,4 +54,14 @@ namespace agent
         return "";
     }
 
+    vector<string> XtAgentConfig::getAllAccountID()
+    {
+        vector<string> ret;
+        for(map<string, string>::iterator iter = m_accountMatch.begin(); iter != m_accountMatch.end(); ++iter)
+        {
+            ret.push_back(iter->second);
+        }
+        return ret;
+    }
+
 }

@@ -5,12 +5,10 @@
 
 namespace agent
 {
-    XtAgentFileChecker::XtAgentFileChecker(boost::asio::io_service& ioservice)
-        : m_nScanInterval(300)
-        , m_nUpdateWarnTime(300)
+
+    XtAgentFileChecker::XtAgentFileChecker()
     {
-        // 这里的ioservice不能用rpc引擎的，因为disparchio根本就没有启动
-        m_nScanTimer = boost::shared_ptr<boost::asio::deadline_timer>(new boost::asio::deadline_timer(ioservice));
+
 
     }
 
@@ -20,19 +18,9 @@ namespace agent
     }
 
 
-    void XtAgentFileChecker::start()
-    {
-        if (NULL != m_nScanTimer)
-        {
-            m_nScanTimer->expires_from_now(boost::posix_time::seconds(m_nScanInterval));
-            m_nScanTimer->async_wait(boost::bind(&XtAgentFileChecker::on_scanFiles, shared_from_this(), _1));
-        }
-    }
 
-    void XtAgentFileChecker::init(boost::shared_ptr<utils::Configuration>& config)
+    void XtAgentFileChecker::init(const utils::ConfigurationPtr& config)
     {
-        m_nScanInterval = config->readInt("filescan", "sacn_interval", 300);
-        LOG_INFO(boost::format("==: [filescan] sacn_interval: %d") %m_nScanInterval);
 
         m_nUpdateWarnTime = config->readInt("filescan", "update_warn_time", 300);
         LOG_INFO(boost::format("==: [filescan] update_warn_time: %d") %m_nUpdateWarnTime);
@@ -46,31 +34,11 @@ namespace agent
         server = config->read("mail", "mail_server");
         LOG_INFO(boost::format("==: [mail] mail_server: %d") %server);
 
-        m_bUseMailWarn = config->readInt("mail", "use_mail_warn", 0) == 0 ? false : true;
-        LOG_INFO(boost::format("==: [mail] use_mail_warn: %s") %(m_bUseMailWarn ?"on" : "off"));
-
         string exportMainPath = config->read("common", "csv_file_path");
         m_vScanPaths.push_back(exportMainPath + "Folder1\\");
         m_vScanPaths.push_back(exportMainPath + "Folder2\\");
-
-        if (m_bUseMailWarn)
-        {
-            start();
-        }
     }
 
-    void XtAgentFileChecker::on_scanFiles(const boost::system::error_code& error)
-    {
-        if (!error)
-        {
-            scanFiles();
-            if (NULL != m_nScanTimer)
-            {
-                m_nScanTimer->expires_from_now(boost::posix_time::seconds(m_nScanInterval));
-                m_nScanTimer->async_wait(boost::bind(&XtAgentFileChecker::on_scanFiles, shared_from_this(), _1));
-            }
-        }
-    }
 
     string XtAgentFileChecker::genSendMsg(const map<string , r_int64>& warnMap)
     {
@@ -99,7 +67,7 @@ namespace agent
             for (map<string , r_int64>::iterator timeiter = timeMap.begin();
                 timeiter != timeMap.end(); ++timeiter)
             {
-                if (timeNow - timeiter->second > m_nScanInterval)
+                if (timeNow - timeiter->second > m_nUpdateWarnTime)
                 {
                     warnMap[timeiter->first] = timeNow - timeiter->second;
                 }

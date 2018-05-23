@@ -31,6 +31,7 @@ namespace agent
     static const FieldMatchUnit FIELD_PAIR_FUND[] = 
     {
         { "accountID", "", SWAP_STR},
+        { "accountName", "产品名称", SWAP_STR},
         { "enableBalance", "T+0可用", SWAP_DOUBLE},
         { "fetchBalance", "当前现金余额", SWAP_DOUBLE},
         { "marketValue", "股票资产", SWAP_DOUBLE},
